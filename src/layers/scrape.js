@@ -2,6 +2,7 @@ const { ApifyClient } = require('apify-client');
 const config = require('../lib/config');
 const db = require('../lib/db');
 const log = require('../lib/logger');
+const { uploadVideoFromUrl } = require('../lib/storage');
 
 const SEARCH_QUERIES = [
   'funny dog scared', 'dog jump scare reaction', 'dog fails funny',
@@ -107,6 +108,19 @@ async function scrapeAndQueue() {
 
         added++;
         log.info(`[scrape] Added: "${title.slice(0, 60)}" (${views} views, ${duration}s)`);
+
+        // Try to download and store video file
+        try {
+          const filename = `${Date.now()}_${url.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 50)}.mp4`;
+          const storageUrl = await uploadVideoFromUrl(url, filename);
+          if (storageUrl) {
+            // Find the inserted row and update video_file_url
+            const { data: rows } = await db.supabase.from('videos').select('id').eq('source_url', url).limit(1);
+            if (rows?.[0]) await db.updateVideo(rows[0].id, { video_file_url: storageUrl });
+          }
+        } catch (dlErr) {
+          log.warn(`[scrape] Video download failed: ${dlErr.message} — metadata saved, will retry later`);
+        }
       }
     } catch (e) {
       log.error(`[scrape] Query "${query}" failed: ${e.message}`);

@@ -1,0 +1,21 @@
+require('dotenv').config();
+
+module.exports = {
+  FAL_KEY: process.env.FAL_KEY,
+  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+  APIFY_API_TOKEN: process.env.APIFY_API_TOKEN,
+  TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
+  TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID,
+  YOUTUBE_CLIENT_ID: process.env.YOUTUBE_CLIENT_ID,
+  YOUTUBE_CLIENT_SECRET: process.env.YOUTUBE_CLIENT_SECRET,
+  YOUTUBE_REFRESH_TOKEN: process.env.YOUTUBE_REFRESH_TOKEN,
+  SUPABASE_URL: process.env.SUPABASE_URL,
+  SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY,
+  STORAGE_BUCKET_NAME: process.env.STORAGE_BUCKET_NAME || 'dog-videos',
+  STORAGE_ACCESS_KEY: process.env.STORAGE_ACCESS_KEY,
+  STORAGE_SECRET_KEY: process.env.STORAGE_SECRET_KEY,
+  STORAGE_ENDPOINT: process.env.STORAGE_ENDPOINT,
+  STORAGE_REGION: process.env.STORAGE_REGION || 'auto',
+  APP_URL: process.env.APP_URL || 'http://localhost:3000',
+  PORT: process.env.PORT || 3000,
+};

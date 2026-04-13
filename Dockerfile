@@ -15,4 +15,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/health', r => { process.exit(r.statusCode === 200 ? 0 : 1) })"
 
-CMD ["node", "src/index.js"]
+# Auto-update yt-dlp on every container start (TikTok changes URLs frequently)
+CMD pip install --break-system-packages -U yt-dlp && node src/index.js

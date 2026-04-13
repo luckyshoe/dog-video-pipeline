@@ -70,7 +70,14 @@ async function generateVideo() {
     return;
   }
 
-  log.info(`[generate] Starting generation for ${video.id}`);
+  // Limit to 2 generations per day
+  const stats = await db.getStatsToday();
+  if (stats.generated_today >= 2) {
+    log.info(`[generate] Daily limit reached (${stats.generated_today}/2). Skipping.`);
+    return;
+  }
+
+  log.info(`[generate] Starting generation for ${video.id} (${stats.generated_today + 1}/2 today)`);
   await db.updateVideo(video.id, { status: 'generating' });
 
   const change = video.analysis_what_to_change || {};

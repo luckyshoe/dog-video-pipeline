@@ -16,6 +16,7 @@ module.exports = {
   STORAGE_SECRET_KEY: process.env.STORAGE_SECRET_KEY,
   STORAGE_ENDPOINT: process.env.STORAGE_ENDPOINT,
   STORAGE_REGION: process.env.STORAGE_REGION || 'auto',
+  ELEVENLABS_API_KEY: process.env.ELEVENLABS_API_KEY,
   APP_URL: process.env.APP_URL || 'http://localhost:3000',
   PORT: process.env.PORT || 3000,
 };

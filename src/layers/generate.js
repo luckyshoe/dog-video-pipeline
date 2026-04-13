@@ -3,6 +3,7 @@ const log = require('../lib/logger');
 const { generateStartingImage, generateVideoI2V } = require('../lib/fal');
 const { callClaude, parseJsonResponse } = require('../lib/claude');
 const { sendToTelegram } = require('./telegram-send');
+const { addVoiceover } = require('./voiceover');
 
 function buildImagePrompt(video) {
   const change = video.analysis_what_to_change || {};
@@ -144,8 +145,17 @@ Generate captions. Return ONLY JSON:
       log.warn(`[generate] Caption generation failed: ${e.message} — continuing without captions`);
     }
 
-    // Step 4: Mark as generated and send to Telegram
-    await db.updateVideo(video.id, { status: 'generated' });
+    // Step 4: Add voiceover narration
+    log.info('[generate] Adding voiceover...');
+    try {
+      await addVoiceover(video.id);
+      totalCost += 0.03; // ElevenLabs cost estimate
+    } catch (e) {
+      log.warn(`[generate] Voiceover failed: ${e.message} — sending without voiceover`);
+    }
+
+    // Step 5: Mark as generated and send to Telegram
+    await db.updateVideo(video.id, { status: 'generated', generation_cost: totalCost });
     log.info(`[generate] Complete! Cost: $${totalCost.toFixed(2)}`);
 
     // Trigger Telegram approval

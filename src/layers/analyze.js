@@ -14,15 +14,33 @@ const { callClaudeVision, parseJsonResponse } = require('../lib/claude');
 async function extractFrames(videoUrl, durationSecs, frameCount = 10) {
   const tmpVideo = path.join(os.tmpdir(), `analyze_${Date.now()}.mp4`);
 
-  // Download video
-  await new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(tmpVideo);
-    https.get(videoUrl, (res) => {
-      if (res.statusCode !== 200) { reject(new Error(`Download HTTP ${res.statusCode}`)); return; }
-      res.pipe(file);
-      file.on('finish', () => { file.close(); resolve(); });
-    }).on('error', reject);
-  });
+  // Download video — use yt-dlp for YouTube/TikTok/Instagram, direct HTTPS for others
+  const isYouTube = /youtube\.com|youtu\.be/.test(videoUrl);
+  const isTikTok = /tiktok\.com/.test(videoUrl);
+  const isInstagram = /instagram\.com/.test(videoUrl);
+
+  if (isYouTube || isTikTok || isInstagram) {
+    log.info(`[analyze] Downloading with yt-dlp: ${videoUrl.slice(0, 60)}`);
+    await new Promise((resolve, reject) => {
+      const proc = spawn('yt-dlp', [
+        '-f', 'mp4/best', '--no-playlist', '--no-simulate',
+        '-o', tmpVideo, '--force-overwrites', videoUrl,
+      ]);
+      let stderr = '';
+      proc.stderr.on('data', c => stderr += c);
+      proc.on('close', code => code === 0 ? resolve() : reject(new Error(`yt-dlp exit ${code}: ${stderr.slice(-200)}`)));
+      proc.on('error', e => reject(e.code === 'ENOENT' ? new Error('yt-dlp not installed') : e));
+    });
+  } else {
+    await new Promise((resolve, reject) => {
+      const file = fs.createWriteStream(tmpVideo);
+      https.get(videoUrl, (res) => {
+        if (res.statusCode !== 200) { reject(new Error(`Download HTTP ${res.statusCode}`)); return; }
+        res.pipe(file);
+        file.on('finish', () => { file.close(); resolve(); });
+      }).on('error', reject);
+    });
+  }
 
   const frames = [];
   const dur = durationSecs || 10;

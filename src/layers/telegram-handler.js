@@ -1,7 +1,12 @@
 const db = require('../lib/db');
 const log = require('../lib/logger');
+const config = require('../lib/config');
 const telegram = require('../lib/telegram');
 const { uploadToYouTube } = require('../lib/youtube');
+const { callClaude } = require('../lib/claude');
+
+// Track which chat is waiting to type edit instructions
+const pendingEdits = {};
 
 /**
  * Handle Telegram callback button presses.
@@ -88,6 +93,13 @@ async function handleTelegramCallback(ctx) {
 
       await telegram.editMessageText(messageId, `Rejected: ${reason}. Learning from this.`);
 
+    } else if (action === 'edit') {
+      await ctx.answerCbQuery('Type your edit instructions');
+      await telegram.editMessageText(messageId, `Waiting for your edit instructions for video ${videoId.slice(0, 8)}...\n\nType what you want changed (e.g. "dog jumps on trampoline not grass" or "change to golden retriever, indoor setting")`);
+
+      // Store that we're waiting for edit instructions for this video
+      pendingEdits[config.TELEGRAM_CHAT_ID] = videoId;
+
     } else if (action === 'regenerate') {
       const retryCount = (video.retry_count || 0) + 1;
 
@@ -123,4 +135,80 @@ async function handleTelegramCallback(ctx) {
   }
 }
 
-module.exports = { handleTelegramCallback };
+/**
+ * Handle text messages — used for edit instructions after "Edit & Regenerate" button.
+ */
+async function handleTextMessage(ctx) {
+  const chatId = String(ctx.message?.chat?.id);
+  const text = ctx.message?.text?.trim();
+
+  if (!pendingEdits[chatId] || !text) return;
+
+  const videoId = pendingEdits[chatId];
+  delete pendingEdits[chatId];
+
+  const video = await db.getVideoById(videoId).catch(() => null);
+  if (!video) {
+    await ctx.reply('Video not found — may have been deleted.');
+    return;
+  }
+
+  try {
+    await ctx.reply(`Got it! Applying edit: "${text.slice(0, 100)}"\nRegenerating...`);
+    log.info(`[edit] Video ${videoId}: "${text}"`);
+
+    // Use Claude to modify the original analysis based on edit instructions
+    const editedAnalysis = await callClaude({
+      system: `You modify video generation parameters based on user instructions. Return ONLY valid JSON with the updated fields. Keep all fields that weren't mentioned unchanged.`,
+      userContent: `Current video details:
+- Breed: ${video.new_breed || video.analysis_breed}
+- Color: ${video.new_color || video.analysis_color}
+- Setting: ${video.analysis_setting}
+- Setup: ${video.analysis_setup}
+- Trigger: ${video.analysis_trigger}
+- Punchline: ${video.analysis_punchline}
+- Aftermath: ${video.analysis_aftermath}
+
+User wants to change: "${text}"
+
+Return JSON with ONLY the fields that should change:
+{
+  "new_breed": "only if breed changed",
+  "new_color": "only if color changed",
+  "analysis_setting": "only if setting changed",
+  "analysis_setup": "only if setup changed",
+  "analysis_trigger": "only if trigger changed",
+  "analysis_punchline": "only if punchline changed",
+  "analysis_aftermath": "only if aftermath changed"
+}
+Remove any fields that stay the same.`,
+      maxTokens: 500,
+    });
+
+    const changes = JSON.parse(editedAnalysis.slice(editedAnalysis.indexOf('{'), editedAnalysis.lastIndexOf('}') + 1));
+    log.info(`[edit] Changes: ${JSON.stringify(changes)}`);
+
+    // Apply changes and reset for regeneration
+    const retryCount = (video.retry_count || 0) + 1;
+    await db.updateVideo(videoId, {
+      ...changes,
+      status: 'analyzed',
+      starting_image_url: null,
+      generated_video_url: null,
+      video_prompt: null,
+      starting_image_prompt: null,
+      captions_youtube: null,
+      captions_tiktok: null,
+      captions_instagram: null,
+      captions_facebook: null,
+      retry_count: retryCount,
+    });
+
+    await ctx.reply(`Edit applied! Video added back to generation queue (retry ${retryCount}/3).\nChanges: ${Object.keys(changes).join(', ')}`);
+  } catch (e) {
+    log.error(`[edit] Failed for ${videoId}: ${e.message}`);
+    await ctx.reply(`Edit failed: ${e.message}`);
+  }
+}
+
+module.exports = { handleTelegramCallback, handleTextMessage, pendingEdits };

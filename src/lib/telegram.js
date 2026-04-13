@@ -61,6 +61,7 @@ async function sendForApproval(video) {
       [Markup.button.callback('Reject — Bad anatomy', `reject_bad_anatomy_${video.id}`)],
       [Markup.button.callback('Reject — Not funny', `reject_not_funny_${video.id}`)],
       [Markup.button.callback('Reject — Wrong punchline', `reject_wrong_punchline_${video.id}`)],
+      [Markup.button.callback('Edit & Regenerate', `edit_${video.id}`)],
       [Markup.button.callback('Regenerate same source', `regenerate_${video.id}`)],
       [Markup.button.callback('Skip this video', `skip_${video.id}`)],
     ]),

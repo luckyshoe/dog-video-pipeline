@@ -5,7 +5,7 @@ const config = require('./lib/config');
 const log = require('./lib/logger');
 const db = require('./lib/db');
 const { getBot } = require('./lib/telegram');
-const { handleTelegramCallback } = require('./layers/telegram-handler');
+const { handleTelegramCallback, handleTextMessage } = require('./layers/telegram-handler');
 const { scrapeAndQueue } = require('./layers/scrape');
 const { analyzeNextVideo } = require('./layers/analyze');
 const { generateVideo } = require('./layers/generate');
@@ -104,6 +104,7 @@ async function start() {
   // Setup Telegram bot callback handler
   const bot = getBot();
   bot.on('callback_query', handleTelegramCallback);
+  bot.on('text', handleTextMessage);
 
   // Set webhook if APP_URL is configured
   if (config.APP_URL && config.APP_URL !== 'http://localhost:3000') {

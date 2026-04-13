@@ -112,7 +112,18 @@ async function generateVideo() {
     log.info('[generate] Generating captions...');
     try {
       const captionText = await callClaude({
-        system: `You are a viral social media content strategist for pet/animal comedy videos. Reuse exact hashtags and emojis from original. Rewrite title and description completely. Return valid JSON only.`,
+        system: `You are a viral social media content strategist for pet/animal comedy videos. You create captions that maximize engagement, shares, saves, and discoverability.
+
+CRITICAL RULES:
+- Use "dog" in titles, NOT specific breed names — "dog" has highest search volume
+- Reuse emojis from original video
+- Rewrite title and description completely — never copy original title
+- NEVER use platform-specific hashtags on the wrong platform:
+  - #dogsoftiktok, #fyp, #foryoupage → TikTok ONLY
+  - #dogsofinstagram, #reels → Instagram ONLY
+  - #shorts → YouTube ONLY
+  - General hashtags like #funnydog #dogreaction #dogfail → any platform
+- Return valid JSON only — no explanation or markdown`,
         userContent: `Comedy analysis:
 Punchline: ${video.analysis_punchline}
 Comedy style: ${video.analysis_comedy_style}
@@ -127,10 +138,28 @@ Keywords: ${JSON.stringify(video.original_keywords || [])}
 
 Generate captions. Return ONLY JSON:
 {
-  "youtube": { "title": "max 60 chars", "description": "2-3 sentences", "tags": ["10-15 tags"] },
-  "tiktok": { "title": "max 150 chars", "description": "150-300 chars", "hashtags": ["from original"], "keywords": ["5-8"], "emojis": "from original" },
-  "instagram": { "caption": "125 char hook + expansion", "hashtags": ["from original"], "emojis": "from original", "alt_text": "one sentence" },
-  "facebook": { "post_text": "1-3 sentences with question", "hashtags": ["3-5 most relevant"] }
+  "youtube": {
+    "title": "hook text max 50 chars + 2 hashtags (1 dog-related like #funnydog + #shorts). Example: This Dog's Reaction Is PRICELESS #funnydog #shorts",
+    "description": "2-3 sentences using same keywords differently, ends with subscribe CTA",
+    "tags": ["10-15 tags as array"]
+  },
+  "tiktok": {
+    "title": "hook-first max 150 chars, can include #fyp #dogsoftiktok",
+    "description": "150-300 chars, ends with question to drive comments",
+    "hashtags": ["use original hashtags + TikTok-specific ones like dogsoftiktok, fyp, foryoupage"],
+    "keywords": ["5-8 search keywords"],
+    "emojis": "copy exact emojis from original"
+  },
+  "instagram": {
+    "caption": "125 char hook + expansion + call to action",
+    "hashtags": ["use original hashtags + Instagram-specific ones like dogsofinstagram, reels, instareels"],
+    "emojis": "copy exact emojis from original",
+    "alt_text": "one descriptive sentence"
+  },
+  "facebook": {
+    "post_text": "1-3 conversational sentences with question",
+    "hashtags": ["3-5 general hashtags only — NO platform-specific ones"]
+  }
 }`,
         maxTokens: 2000,
       });

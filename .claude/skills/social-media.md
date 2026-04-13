@@ -43,30 +43,30 @@ Generate captions. Return ONLY this JSON:
 
 {
   "youtube": {
-    "title": "rewritten title, same keywords, max 60 chars,
-              hook-first, do not copy original title",
+    "title": "hook text max 50 chars + 2 hashtags (1 dog-related like #funnydog + #shorts).
+              Use 'dog' not breed name. Example: This Dog's Reaction Is PRICELESS #funnydog #shorts",
     "description": "2-3 sentences, uses same keywords differently,
                     ends with subscribe CTA",
     "tags": ["10-15 tags as array, mix of original keywords
               and variations"]
   },
   "tiktok": {
-    "title": "hook-first, max 150 chars, rewritten",
+    "title": "hook-first, max 150 chars, can include #fyp #dogsoftiktok",
     "description": "150-300 chars, ends with question
                     to drive comments",
-    "hashtags": ["copy exact hashtags from original as array"],
+    "hashtags": ["use original hashtags + TikTok-specific like dogsoftiktok, fyp, foryoupage"],
     "keywords": ["5-8 search keywords from original"],
     "emojis": "copy exact emojis from original"
   },
   "instagram": {
     "caption": "125 char hook + expansion + call to action",
-    "hashtags": ["copy exact hashtags from original as array"],
+    "hashtags": ["use original hashtags + Instagram-specific like dogsofinstagram, reels, instareels"],
     "emojis": "copy exact emojis from original",
     "alt_text": "one descriptive sentence of video content"
   },
   "facebook": {
     "post_text": "1-3 conversational sentences with question",
-    "hashtags": ["3-5 most relevant from original hashtags"]
+    "hashtags": ["3-5 general hashtags only — NO platform-specific ones"]
   }
 }
 """

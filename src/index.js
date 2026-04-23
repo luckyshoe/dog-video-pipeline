@@ -123,9 +123,15 @@ async function start() {
   }
 
   // Schedule cron jobs
-  // Scraping: daily at 6am
-  cron.schedule('0 6 * * *', () => safeRun('scrape', scrapeAndQueue));
-  log.info('[cron] Scraping scheduled: daily at 6:00 AM');
+  // Scraping is gated by SCRAPE_ENABLED env var. Disabled 2026-04-23 at user's
+  // request — Apify actor runs were exceeding their plan. Toggle in Railway →
+  // Variables: SCRAPE_ENABLED=true to re-enable, anything else keeps it off.
+  if (process.env.SCRAPE_ENABLED === 'true') {
+    cron.schedule('0 6 * * *', () => safeRun('scrape', scrapeAndQueue));
+    log.info('[cron] Scraping scheduled: daily at 6:00 AM (SCRAPE_ENABLED=true)');
+  } else {
+    log.info('[cron] Scraping DISABLED — no Apify actor runs. Set SCRAPE_ENABLED=true in Railway to re-enable.');
+  }
 
   // Analysis: every hour on the hour
   cron.schedule('0 * * * *', () => safeRun('analyze', analyzeNextVideo));
